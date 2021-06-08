@@ -1,50 +1,49 @@
 import os
 import socket
-import select
-import errno
 import sys
 from threading import Thread
 from time import sleep
+import KeyPressModule as kp
+
+def getKeyboardInput():
+    global message
+    lr, fb, ud, yv = 0, 0, 0, 0
+
+    speed = 50
+
+    if kp.getKey("a"): lr = -speed
+
+    elif kp.getKey("d"): lr = speed
+
+    if kp.getKey("w"): fb = speed
+
+    elif kp.getKey("s"): fb = -speed
+
+    if kp.getKey("SPACE"):ud = speed
+
+    elif kp.getKey("LSHIFT"): ud = -speed
+
+    if kp.getKey("LEFT"):yv = -speed
+
+    elif kp.getKey("RIGHT"): yv = speed
+
+    if kp.getKey("q"):
+        message = 'land'
+        sleep(1)
+
+    if kp.getKey("e"):
+        message = 'takeoff'
+        sleep(1)
+
+    return [lr, fb, ud, yv]
+
 
 def keyboard_control():
-    import KeyPressModule as kp
     global message
-    from time import sleep
+
 
     kp.init()
     
-    def getKeyboardInput():
-        global message
-        lr, fb, ud, yv = 0, 0, 0, 0
-
-        speed = 50
-
-        if kp.getKey("a"): lr = -speed
-
-        elif kp.getKey("d"): lr = speed
-
-        if kp.getKey("w"): fb = speed
-
-        elif kp.getKey("s"): fb = -speed
-
-        if kp.getKey("SPACE"):ud = speed
-
-        elif kp.getKey("LSHIFT"): ud = -speed
-
-        if kp.getKey("LEFT"):yv = -speed
-
-        elif kp.getKey("RIGHT"): yv = speed
-
-        if kp.getKey("q"):
-            message = 'land'
-            sleep(1)
-
-        if kp.getKey("e"):
-            message = 'takeoff'
-            sleep(1)
-
-        return [lr, fb, ud, yv]
-
     while True:
 
         vals = getKeyboardInput()
@@ -54,13 +53,25 @@ def keyboard_control():
 
 
 def send_msg():
-    global HEADER_LENGTH
     global message
-    global client_socket
-    global message_header
-    global my_username
+    
+    HEADER_LENGTH = 10
+    IP = '192.168.5.173'
+    PORT = 1235
+
+
+    my_username = 'Driver'
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((IP,PORT))
+    client_socket.setblocking(False)
+
+    username = my_username.encode('utf-8')
+    username_header = f'{len(username):<{HEADER_LENGTH}}'.encode('utf-8')
+    client_socket.send(username_header + username)
+    
     message = ''
     comand_list = ['takeoff','land','flip']
+    
     while True:
 
         if message:
@@ -72,22 +83,10 @@ def send_msg():
             sleep(1)
             
 
-
-HEADER_LENGTH = 10
-IP = '192.168.5.173'
-PORT = 1235
-
 clear = lambda: os.system('cls')
 clear()
 
-my_username = 'Driver'
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((IP,PORT))
-client_socket.setblocking(False)
 
-username = my_username.encode('utf-8')
-username_header = f'{len(username):<{HEADER_LENGTH}}'.encode('utf-8')
-client_socket.send(username_header + username)
 
 thread1 = Thread(target= keyboard_control)       
 thread2 = Thread(target=send_msg)
